@@ -36,7 +36,8 @@ namespace bts { namespace blockchain {
       confirmation_requirement = 6,
       database_version         = 7, // database version, to know when we need to upgrade
       dirty_markets            = 8,
-      last_feed_id             = 9 // used for allocating new data feeds
+      last_feed_id             = 9, // used for allocating new data feeds
+      current_difficulty       = 10
    };
    typedef uint32_t chain_property_type;
 
@@ -211,4 +212,5 @@ FC_REFLECT_ENUM( bts::blockchain::chain_property_enum,
                  (database_version)
                  (dirty_markets)
                  (last_feed_id)
+                 (current_difficulty)
                  )

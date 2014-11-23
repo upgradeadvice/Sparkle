@@ -29,6 +29,7 @@ variant_object client_impl::get_info()const
    info["blockchain_head_block_num"]                         = head_block_num;
    info["blockchain_head_block_age"]                         = variant();
    info["blockchain_head_block_timestamp"]                   = variant();
+   info["blockchain_difficulty"]                             = _chain_db->get_property( current_difficulty );
    time_point_sec head_block_timestamp;
    if( head_block_num > 0 )
    {
@@ -37,45 +38,29 @@ variant_object client_impl::get_info()const
       info["blockchain_head_block_timestamp"]              = head_block_timestamp;
    }
 
-   info["blockchain_average_delegate_participation"]         = variant();
-   const auto participation                                  = _chain_db->get_average_delegate_participation();
-   if( participation <= 100 )
-      info["blockchain_average_delegate_participation"]     = participation;
+   info["blockchain_confirmation_requirement"]             = 6;
 
-   info["blockchain_confirmation_requirement"]               = _chain_db->get_required_confirmations();
-
-   info["blockchain_share_supply"]                           = variant();
-   const auto share_record                                   = _chain_db->get_asset_record( BTS_BLOCKCHAIN_SYMBOL );
+   info["blockchain_share_supply"]                         = variant();
+   const auto share_record                                 = _chain_db->get_asset_record( BTS_BLOCKCHAIN_SYMBOL );
    if( share_record.valid() )
-      info["blockchain_share_supply"]                       = share_record->current_share_supply;
+      info["blockchain_share_supply"]                      = share_record->current_share_supply;
 
-   const auto blocks_left                                    = BTS_BLOCKCHAIN_NUM_DELEGATES - (head_block_num % BTS_BLOCKCHAIN_NUM_DELEGATES);
-   info["blockchain_blocks_left_in_round"]                   = blocks_left;
+   const auto blocks_left                                  = BTS_BLOCKCHAIN_NUM_DELEGATES - (head_block_num % BTS_BLOCKCHAIN_NUM_DELEGATES);
 
-   info["blockchain_next_round_time"]                        = variant();
-   info["blockchain_next_round_timestamp"]                   = variant();
-   if( head_block_num > 0 )
-   {
-      const auto current_round_timestamp                    = blockchain::get_slot_start_time( now );
-      const auto next_round_timestamp                       = current_round_timestamp + (blocks_left * BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC);
-      info["blockchain_next_round_time"]                    = ( next_round_timestamp - now ).to_seconds();
-      info["blockchain_next_round_timestamp"]               = next_round_timestamp;
-   }
-
-   info["blockchain_random_seed"]                            = _chain_db->get_current_random_seed();
+   info["blockchain_random_seed"]                          = _chain_db->get_current_random_seed();
 
    /* Client */
-   info["client_data_dir"]                                   = fc::absolute( _data_dir );
-   //info["client_httpd_port"]                                 = _config.is_valid() ? _config.httpd_endpoint.port() : 0;
-   //info["client_rpc_port"]                                   = _config.is_valid() ? _config.rpc_endpoint.port() : 0;
-   info["client_version"]                                    = bts::client::version_info()["client_version"].as_string();
+   info["client_data_dir"]                                 = fc::absolute( _data_dir );
+   //info["client_httpd_port"]                               = _config.is_valid() ? _config.httpd_endpoint.port() : 0;
+   //info["client_rpc_port"]                                 = _config.is_valid() ? _config.rpc_endpoint.port() : 0;
+   info["client_version"]                                  = bts::client::version_info()["client_version"].as_string();
 
    /* Network */
-   info["network_num_connections"]                           = network_get_connection_count();
-   fc::variant_object advanced_params                        = network_get_advanced_node_parameters();
-   info["network_num_connections_max"]                       = advanced_params["maximum_number_of_connections"];
-   info["network_chain_downloader_running"]                  = _chain_downloader_running;
-   info["network_chain_downloader_blocks_remaining"]         = _chain_downloader_running?
+   info["network_num_connections"]                         = network_get_connection_count();
+   fc::variant_object advanced_params                      = network_get_advanced_node_parameters();
+   info["network_num_connections_max"]                     = advanced_params["maximum_number_of_connections"];
+   info["network_chain_downloader_running"]                = _chain_downloader_running;
+   info["network_chain_downloader_blocks_remaining"]       = _chain_downloader_running?
             _chain_downloader_blocks_remaining :
             variant();
 
@@ -99,12 +84,10 @@ variant_object client_impl::get_info()const
    info["wallet_last_scanned_block_timestamp"]               = variant();
    info["wallet_scan_progress"]                              = variant();
 
-   info["wallet_block_production_enabled"]                   = variant();
-   info["wallet_next_block_production_time"]                 = variant();
-   info["wallet_next_block_production_timestamp"]            = variant();
-
+   info["wallet_block_production_enabled"]                   = "wallet closed";
    if( is_open )
    {
+      info["wallet_block_production_enabled"]                   = _mining_enabled;
       info["wallet_unlocked"]                                 = _wallet->is_unlocked();
 
       const auto unlocked_until                               = _wallet->unlocked_until();
@@ -130,10 +113,6 @@ variant_object client_impl::get_info()const
          }
 
          info["wallet_scan_progress"]                          = _wallet->get_scan_progress();
-
-         const auto enabled_delegates                          = _wallet->get_my_delegates( enabled_delegate_status );
-         const auto block_production_enabled                   = !enabled_delegates.empty();
-         info["wallet_block_production_enabled"]               = block_production_enabled;
       }
    }
 

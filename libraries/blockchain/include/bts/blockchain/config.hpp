@@ -54,8 +54,8 @@
 /**
  * Defines the number of seconds that should elapse between blocks
  */
-#define BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC                   int64_t(60)
-#define SPK_MIN_DIFFICULTY                                  int64_t(10)
+#define BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC                   int64_t(20)
+#define SPK_MIN_DIFFICULTY                                  int64_t(100)
 
 /**
  *  The maximum size of the raw data contained in the blockchain, this size is

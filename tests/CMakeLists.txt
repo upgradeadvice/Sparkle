@@ -50,8 +50,6 @@ set(regression_test_files ${regression_tests_common_logs_files}
 add_executable( dev_tests dev_tests.cpp )
 target_link_libraries( dev_tests bts_client bts_cli bts_wallet bts_blockchain bts_net bts_utilities deterministic_openssl_rand bitcoin fc )
 
-add_executable( nathan_tests nathan_tests.cpp )
-target_link_libraries( nathan_tests bts_client bts_cli bts_wallet bts_blockchain bts_net bts_utilities deterministic_openssl_rand bitcoin fc )
 
 #add_executable( server_node server_node.cpp )
 #target_link_libraries( server_node bts_client bts_network bts_net fc bts_cli )

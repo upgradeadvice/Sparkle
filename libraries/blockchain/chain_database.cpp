@@ -205,6 +205,7 @@ namespace bts { namespace blockchain {
            return chain_id;
          _chain_id = chain_id;
          self->set_property( bts::blockchain::chain_id, fc::variant(_chain_id) );
+         self->set_property( bts::blockchain::current_difficulty, SPK_MIN_DIFFICULTY );
 
          fc::uint128 total_unscaled = 0;
          for( const auto& item : config.balances ) total_unscaled += int64_t(item.second/1000);
@@ -707,7 +708,7 @@ namespace bts { namespace blockchain {
 
             fc::time_point_sec now = bts::blockchain::now();
             auto delta_seconds = (block_data.timestamp - now).to_seconds();
-            if( block_data.timestamp >  (now + 30/*seconds*/) )
+            if( block_data.timestamp >  (now + BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC) )
                 FC_CAPTURE_AND_THROW( time_in_future, (block_data.timestamp)(now)(delta_seconds) );
 
             digest_block digest_data(block_data);
@@ -716,10 +717,26 @@ namespace bts { namespace blockchain {
 
             FC_ASSERT( digest_data.validate_unique() );
 
-            // difficulty *= expected_time / delta time last 100 blocks 
-            // difficulty = max_hash / block_hash ... smaller block hash == larger difficulty
-            // VALIDATE PROOF OF WORK HERE
+            uint64_t delta_time = BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC * 100;
+            uint64_t expected_time = BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC * 100;
+            if( block_data.block_num > 101 )
+            {
+               auto old_block = self->get_block_header( block_data.block_num - 100 );
+               auto last_block = self->get_block_header( block_data.block_num - 1 );
+               delta_time = (last_block.timestamp - old_block.timestamp).to_seconds();
+            }
 
+            auto difficulty = self->get_property( current_difficulty ).as_uint64();
+            difficulty *= expected_time;
+            difficulty /= delta_time;
+
+
+            FC_ASSERT( block_data.difficulty() > difficulty );
+
+            if( difficulty < SPK_MIN_DIFFICULTY )
+               difficulty = SPK_MIN_DIFFICULTY;
+
+            self->set_property( current_difficulty, difficulty );
       } FC_CAPTURE_AND_RETHROW( (block_data) ) }
 
       void chain_database_impl::update_head_block( const full_block& block_data )

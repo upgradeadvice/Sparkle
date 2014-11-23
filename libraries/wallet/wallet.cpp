@@ -1403,7 +1403,7 @@ namespace detail {
 
       my->_wallet_db.import_key( my->_wallet_password, account_record->name, new_private_key, true );
       return new_public_key;
-   } FC_CAPTURE_AND_RETHROW( (account_name)(create_account) ) }
+   } FC_CAPTURE_AND_RETHROW( (account_name)(create_account)(new_private_key)(public_key_type(new_private_key.get_public_key())) ) }
 
    public_key_type wallet::import_wif_private_key( const string& wif_key,
                                                    const optional<string>& account_name,

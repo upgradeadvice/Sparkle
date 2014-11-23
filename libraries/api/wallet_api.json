@@ -2106,6 +2106,11 @@
          "return_type" : "void",
          "parameters"  : [
             {
+                "name" : "account_name",
+                "type" : "account_name",
+                "description" : "the name of the account that should receive mining proceeds"
+            },
+            {
                 "name" : "enabled",
                 "type" : "bool",
                 "description" : "true to enable block production, false otherwise"

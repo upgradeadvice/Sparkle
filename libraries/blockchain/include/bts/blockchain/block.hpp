@@ -8,6 +8,7 @@ namespace bts { namespace blockchain {
    {
        digest_type   digest()const;
        block_id_type id()const;
+       int64_t       difficulty()const;
 
        block_header():block_num(0){}
 
@@ -15,7 +16,7 @@ namespace bts { namespace blockchain {
        uint32_t             block_num;
        fc::time_point_sec   timestamp;
        digest_type          transaction_digest;
-       uint64_t             nonce;
+       uint64_t             nonce = 0;
        address              miner;
    };
 

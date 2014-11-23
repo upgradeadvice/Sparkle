@@ -53,4 +53,18 @@ namespace bts { namespace blockchain {
       return true;
    }
 
+   int64_t block_header::difficulty()const
+   {
+       const fc::sha256 max_hash;
+       memset( max_hash.data(), 0xff, sizeof(max_hash) );
+       max_hash.data()[0] = 0;
+       max_hash.data()[1] = 0x0f;
+       fc::bigint max_hash_int( max_hash.data(), sizeof(max_hash) );
+       const auto block_id = id();
+       fc::bigint block_id_int( block_id.data(), sizeof(max_hash) );
+
+       auto block_difficulty = max_hash_int / block_id_int;
+       return block_difficulty.to_int64();
+   }
+
 } } // bts::blockchain

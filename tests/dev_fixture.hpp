@@ -38,6 +38,7 @@ struct chain_fixture
    :console( new fc::console_appender() )
    { try {
       ilog( "." );
+      enable_logging();
 
       try {
       sim_network = std::make_shared<bts::net::simulated_network>("dev_fixture");
@@ -171,19 +172,19 @@ struct chain_fixture
 
       clienta = std::make_shared<bts::client::client>("dev_fixture", sim_network);
       clienta->open( clienta_dir.path(), clienta_dir.path() / "genesis.json" );
-      clienta->configure_from_command_line( 0, nullptr );
-      clienta->set_daemon_mode(true);
-      _clienta_done = clienta->start();
-      ilog( "... " );
 
       clientb = std::make_shared<bts::client::client>("dev_fixture", sim_network);
       clientb->open( clientb_dir.path(), clientb_dir.path() / "genesis.json" );
+
+      clienta->configure_from_command_line( 0, nullptr );
+      clienta->set_daemon_mode(true);
+      _clienta_done = clienta->start();
+
       clientb->configure_from_command_line( 0, nullptr );
       clientb->set_daemon_mode(true);
       _clientb_done = clientb->start();
-      ilog( "... " );
 
-      enable_logging();
+      exec(clienta, "blockchain_list_active_delegates");
       exec(clienta, "wallet_create walleta masterpassword 123456ddddaxxx123456789012345678901234567890");
       exec(clienta, "wallet_set_automatic_backups false");
       exec(clienta, "wallet_set_transaction_scanning true");
@@ -193,6 +194,7 @@ struct chain_fixture
       exec(clientb, "wallet_set_automatic_backups false");
       exec(clientb, "wallet_set_transaction_scanning true");
       exec(clientb, "wallet_unlock 99999999999 masterpassword");
+
 
       int even = 0;
       for( auto key : delegate_private_keys )
@@ -224,9 +226,9 @@ struct chain_fixture
       else
          console->print( "B: produce block----------------------------------------\n", fc::console_appender::color::green );
 
-      return;
       bts::blockchain::advance_time( 60 ); //(int32_t)((*next_block_time - bts::blockchain::now()).count()/1000000) );
       auto b = my_client->get_chain()->generate_block(bts::blockchain::now());
+      while( b.difficulty() < SPK_MIN_DIFFICULTY ) b.nonce++;
       // TODO: do basic proof of work?
       my_client->get_node()->broadcast( bts::client::block_message( b ) );
       idump( (b) );

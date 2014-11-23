@@ -121,7 +121,8 @@ public:
       client_impl&                         _client_impl;
       fc::thread*                          _thread;
    };
-   bool _mining_enabled = false;
+   bool    _mining_enabled = false;
+   address _miner_address;
 
    client_impl(bts::client::client* self, const std::string& user_agent) :
       _self(self),

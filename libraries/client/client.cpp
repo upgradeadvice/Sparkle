@@ -560,11 +560,7 @@ void client_impl::cancel_delegate_loop()
 
 void client_impl::delegate_loop()
 {
-   if( !_wallet->is_open() || _wallet->is_locked() )
-      return;
-
-   vector<wallet_account_record> enabled_delegates = _wallet->get_my_delegates( enabled_delegate_status );
-   if( enabled_delegates.empty() )
+   if( !_wallet->is_open() )
       return;
 
    const auto now = blockchain::now();
@@ -576,31 +572,43 @@ void client_impl::delegate_loop()
       _delegate_loop_first_run = false;
    }
 
-   if( false ) //next_block_time.valid() )
+   fc::thread miner_thread("miner");
+   while( _mining_enabled && !_delegate_loop_complete.canceled() )
    {
-      // delegates don't get to skip this check, they must check up on everyone else
+      // miners don't get to skip this check, they must check up on everyone else
       _chain_db->skip_signature_verification( false );
 
-      auto next_block_time = bts::blockchain::now();
       try
       {
          FC_ASSERT( network_get_connection_count() >= _min_delegate_connection_count,
                     "Client must have ${count} connections before you may produce blocks!",
                     ("count",_min_delegate_connection_count) );
 
-         full_block next_block = _chain_db->generate_block( next_block_time );
-         // TODO: DO PROOF OF WORK ON BLOCK... 
+         full_block next_block = _chain_db->generate_block( bts::blockchain::now() );
+         next_block.miner = _miner_address;
+         auto target = _chain_db->get_property( current_difficulty ).as_int64();
+         bool produced = miner_thread.async( [&]()->bool{
+             for( uint32_t i = 0; i < 20000; ++i )
+             {
+                next_block.nonce = i;
+                if( next_block.difficulty() >= target )
+                  return true;
+             }
+             return false;
+         } ).wait();
 
-
-         on_new_block( next_block, next_block.id(), false );
+         if( produced )
+         {
+            on_new_block( next_block, next_block.id(), false );
 
 #ifndef DISABLE_DELEGATE_NETWORK
-         _delegate_network.broadcast_block( next_block );
-         // broadcast block to delegates first, starting with the next delegate
+            _delegate_network.broadcast_block( next_block );
+            // broadcast block to delegates first, starting with the next delegate
 #endif
 
-         _p2p_node->broadcast( block_message( next_block ) );
-         ilog( "Produced block #${n}!", ("n",next_block.block_num) );
+            _p2p_node->broadcast( block_message( next_block ) );
+            ilog( "Produced block #${n}!", ("n",next_block.block_num) );
+         }
       }
       catch ( const fc::canceled_exception& )
       {
@@ -611,22 +619,6 @@ void client_impl::delegate_loop()
          _exception_db.store( e );
       }
    }
-
-   uint32_t slot_number = blockchain::get_slot_number( now );
-   time_point_sec next_slot_time = blockchain::get_slot_start_time( slot_number + 1 );
-   ilog( "Rescheduling delegate loop for time: ${t}", ("t",next_slot_time) );
-
-   time_point scheduled_time = next_slot_time;
-   if( blockchain::ntp_time().valid() )
-      scheduled_time -= blockchain::ntp_error();
-
-   /* Don't reschedule immediately in case we are in simulation */
-   const auto system_now = time_point::now();
-   if( scheduled_time <= system_now )
-      scheduled_time = system_now + fc::seconds( 1 );
-
-   if (!_delegate_loop_complete.canceled())
-      _delegate_loop_complete = fc::schedule( [=](){ delegate_loop(); }, scheduled_time, "delegate_loop" );
 }
 
 void client_impl::set_target_connections( uint32_t target )
