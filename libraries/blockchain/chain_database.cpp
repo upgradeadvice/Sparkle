@@ -656,11 +656,39 @@ namespace bts { namespace blockchain {
 
           const share_type accepted_paycheck = accepted_new_shares + accepted_collected_fees;
 
+          // pay the miner
+          auto miner_withdraw_condition = withdraw_condition( withdraw_with_signature( miner ) );
+          auto ominer_balance = pending_state->get_balance_record( miner_withdraw_condition.get_address() );
+          if( ominer_balance ) { ominer_balance->balance += accepted_paycheck; }
+          else ominer_balance = balance_record( miner, asset( accepted_paycheck, 0 ), 0 );
+          pending_state->store_balance_record( *ominer_balance );
+
+
+          auto active_delegates = self->get_active_delegates();
+          vector<account_record> delegate_accounts;
+          delegate_accounts.reserve(BTS_BLOCKCHAIN_NUM_DELEGATES);
+          for( auto delegate_id : active_delegates )
+             delegate_accounts.push_back( *self->get_account_record( delegate_id ) );
+          int32_t total_pay_percent = 0;
+          for( auto delegate_rec : delegate_accounts )
+          {
+             uint8_t delegate_pay_rate = delegate_rec.delegate_pay_rate();
+             if( delegate_pay_rate > 0 && delegate_pay_rate <= 100 )
+                total_pay_percent += delegate_pay_rate;
+          }
+
+          if( total_pay_percent > 0 )
+          {
+             for( auto delegate_rec : delegate_accounts )
+             {
+                delegate_rec.delegate_info->pay_balance += 
+                   (accepted_new_shares * delegate_rec.delegate_pay_rate()) / total_pay_percent;
+                pending_state->store_account_record( delegate_rec );
+             }
+          }
+
           pending_state->store_asset_record( *base_asset_record );
 
-#ifndef WIN32
-#warning [BTS] Track this information in previous pay_delegate versions
-#endif
           oblock_record block_record = self->get_block_record( block_id );
           FC_ASSERT( block_record.valid() );
           block_record->signee_shares_issued = accepted_new_shares;
