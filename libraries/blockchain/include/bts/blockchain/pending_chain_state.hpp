@@ -79,8 +79,6 @@ namespace bts { namespace blockchain {
          virtual variant                get_property( chain_property_enum property_id )const override;
          virtual void                   set_property( chain_property_enum property_id, const variant& property_value )override;
 
-         virtual void                   store_slot_record( const slot_record& r ) override;
-         virtual oslot_record           get_slot_record( const time_point_sec& start_time )const override;
 
          virtual void                   store_market_history_record( const market_history_key& key,
                                                                      const market_history_record& record )override;
@@ -131,7 +129,6 @@ namespace bts { namespace blockchain {
          map< market_index_key, order_record>                           asks;
          map< market_index_key, order_record>                           shorts;
          map< market_index_key, collateral_record>                      collateral;
-         map<time_point_sec, slot_record>                               slots;
          map<market_history_key, market_history_record>                 market_history;
          map< std::pair<asset_id_type,asset_id_type>, market_status>    market_statuses;
          map<operation_type_enum, std::deque<operation>>                recent_operations;
@@ -152,5 +149,5 @@ namespace bts { namespace blockchain {
 // TODO: Why not reflect all members?
 FC_REFLECT( bts::blockchain::pending_chain_state,
             (assets)(slates)(accounts)(balances)(account_id_index)(symbol_id_index)(transactions)
-            (properties)(bids)(asks)(shorts)(collateral)(slots)
+            (properties)(bids)(asks)(shorts)(collateral)
             (market_statuses)(feeds)(burns)(relative_bids)(relative_asks)(_dirty_markets) )

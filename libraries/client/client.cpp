@@ -568,7 +568,7 @@ void client_impl::delegate_loop()
       return;
 
    const auto now = blockchain::now();
-   ilog( "Starting delegate loop at time: ${t}", ("t",now) );
+   ilog( "Starting miner loop at time: ${t}", ("t",now) );
 
    if( _delegate_loop_first_run )
    {
@@ -576,49 +576,39 @@ void client_impl::delegate_loop()
       _delegate_loop_first_run = false;
    }
 
-   const auto next_block_time = _wallet->get_next_producible_block_timestamp( enabled_delegates );
-   if( next_block_time.valid() )
+   if( false ) //next_block_time.valid() )
    {
       // delegates don't get to skip this check, they must check up on everyone else
       _chain_db->skip_signature_verification( false );
-      ilog( "Producing block at time: ${t}", ("t",*next_block_time) );
 
-#ifndef DISABLE_DELEGATE_NETWORK
-      // sign in to delegate server using private keys of my delegates
-      //_delegate_network.signin( _wallet->get_my_delegate( enabled_delegate_status | active_delegate_status ) );
-#endif
-
-      if( *next_block_time <= now )
+      auto next_block_time = bts::blockchain::now();
+      try
       {
-         try
-         {
-            FC_ASSERT( network_get_connection_count() >= _min_delegate_connection_count,
-                       "Client must have ${count} connections before you may produce blocks!",
-                       ("count",_min_delegate_connection_count) );
-            FC_ASSERT( _wallet->is_unlocked(), "Wallet must be unlocked to produce blocks!" );
-            FC_ASSERT( (now - *next_block_time) < fc::seconds( BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC ),
-                       "You missed your slot at time: ${t}!", ("t",*next_block_time) );
+         FC_ASSERT( network_get_connection_count() >= _min_delegate_connection_count,
+                    "Client must have ${count} connections before you may produce blocks!",
+                    ("count",_min_delegate_connection_count) );
 
-            full_block next_block = _chain_db->generate_block( *next_block_time );
-            _wallet->sign_block( next_block );
-            on_new_block( next_block, next_block.id(), false );
+         full_block next_block = _chain_db->generate_block( next_block_time );
+         // TODO: DO PROOF OF WORK ON BLOCK... 
+
+
+         on_new_block( next_block, next_block.id(), false );
 
 #ifndef DISABLE_DELEGATE_NETWORK
-            _delegate_network.broadcast_block( next_block );
-            // broadcast block to delegates first, starting with the next delegate
+         _delegate_network.broadcast_block( next_block );
+         // broadcast block to delegates first, starting with the next delegate
 #endif
 
-            _p2p_node->broadcast( block_message( next_block ) );
-            ilog( "Produced block #${n}!", ("n",next_block.block_num) );
-         }
-         catch ( const fc::canceled_exception& )
-         {
-            throw;
-         }
-         catch( const fc::exception& e )
-         {
-            _exception_db.store( e );
-         }
+         _p2p_node->broadcast( block_message( next_block ) );
+         ilog( "Produced block #${n}!", ("n",next_block.block_num) );
+      }
+      catch ( const fc::canceled_exception& )
+      {
+         throw;
+      }
+      catch( const fc::exception& e )
+      {
+         _exception_db.store( e );
       }
    }
 

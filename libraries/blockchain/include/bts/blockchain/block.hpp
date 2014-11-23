@@ -6,7 +6,8 @@ namespace bts { namespace blockchain {
 
    struct block_header
    {
-       digest_type  digest()const;
+       digest_type   digest()const;
+       block_id_type id()const;
 
        block_header():block_num(0){}
 
@@ -14,20 +15,11 @@ namespace bts { namespace blockchain {
        uint32_t             block_num;
        fc::time_point_sec   timestamp;
        digest_type          transaction_digest;
-       /** used for random number generation on the blockchain */
-       secret_hash_type     next_secret_hash;
-       secret_hash_type     previous_secret;
+       uint64_t             nonce;
+       address              miner;
    };
 
-   struct signed_block_header : public block_header
-   {
-       block_id_type    id()const;
-       bool             validate_signee( const fc::ecc::public_key& expected_signee )const;
-       public_key_type  signee()const;
-       void             sign( const fc::ecc::private_key& signer );
-
-       signature_type delegate_signature;
-   };
+   typedef block_header signed_block_header;
 
    struct digest_block : public signed_block_header
    {
@@ -53,7 +45,6 @@ namespace bts { namespace blockchain {
 } } // bts::blockchain
 
 FC_REFLECT( bts::blockchain::block_header,
-            (previous)(block_num)(timestamp)(transaction_digest)(next_secret_hash)(previous_secret) )
-FC_REFLECT_DERIVED( bts::blockchain::signed_block_header, (bts::blockchain::block_header), (delegate_signature) )
-FC_REFLECT_DERIVED( bts::blockchain::digest_block, (bts::blockchain::signed_block_header), (user_transaction_ids) )
-FC_REFLECT_DERIVED( bts::blockchain::full_block, (bts::blockchain::signed_block_header), (user_transactions) )
+            (previous)(block_num)(timestamp)(transaction_digest)(nonce)(miner) )
+FC_REFLECT_DERIVED( bts::blockchain::digest_block, (bts::blockchain::block_header), (user_transaction_ids) )
+FC_REFLECT_DERIVED( bts::blockchain::full_block, (bts::blockchain::block_header), (user_transactions) )

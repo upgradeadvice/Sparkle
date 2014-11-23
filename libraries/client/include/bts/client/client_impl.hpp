@@ -121,6 +121,7 @@ public:
       client_impl&                         _client_impl;
       fc::thread*                          _thread;
    };
+   bool _mining_enabled = false;
 
    client_impl(bts::client::client* self, const std::string& user_agent) :
       _self(self),
@@ -146,7 +147,8 @@ public:
          {
             _chain_db = std::make_shared<chain_database>();
          } FC_RETHROW_EXCEPTIONS(warn,"chain_db")
-      } FC_RETHROW_EXCEPTIONS( warn, "" ) }
+      } FC_RETHROW_EXCEPTIONS( warn, "" ) 
+   }
 
    virtual ~client_impl() override
    {

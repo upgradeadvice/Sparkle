@@ -321,12 +321,8 @@ string pretty_delegate_list( const vector<account_record>& delegate_records, cpt
     out << pretty_line( 138 );
     out << "\n";
 
-    const auto current_slot_timestamp = blockchain::get_slot_start_time( blockchain::now() );
     const auto head_block_timestamp = client->get_chain()->get_head_block().timestamp;
-    const auto next_slot_time = std::max( current_slot_timestamp, head_block_timestamp + BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC );
     const auto& active_delegates = client->get_chain()->get_active_delegates();
-    const auto next_slot_signee = client->get_chain()->get_slot_signee( next_slot_time, active_delegates );
-    const auto next_signee_name = next_slot_signee.name;
 
     const auto asset_record = client->get_chain()->get_asset_record( asset_id_type() );
     FC_ASSERT( asset_record.valid() );
@@ -337,10 +333,7 @@ string pretty_delegate_list( const vector<account_record>& delegate_records, cpt
         out << std::setw(  6 ) << delegate_record.id;
 
         const auto delegate_name = delegate_record.name;
-        if( delegate_name != next_signee_name )
-            out << std::setw( 32 ) << pretty_shorten( delegate_name, 31 );
-        else
-            out << std::setw( 32 ) << pretty_shorten( delegate_name, 29 ) + " *";
+        out << std::setw( 32 ) << pretty_shorten( delegate_name, 31 );
 
         out << std::setw( 15 ) << pretty_percent( delegate_record.net_votes(), share_supply, 8 );
 
@@ -396,34 +389,7 @@ string pretty_block_list( const vector<block_record>& block_records, cptr client
 
     for( const auto& block_record : block_records )
     {
-        /* Print any missed slots */
-
-        const bool descending = last_block_timestamp > block_record.timestamp;
-        while( last_block_timestamp != block_record.timestamp )
-        {
-            if( descending ) last_block_timestamp -= BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC;
-            else last_block_timestamp += BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC;
-
-            if( last_block_timestamp == block_record.timestamp ) break;
-
-            out << std::setw(  8 ) << "MISSED";
-            out << std::setw( 20 ) << pretty_timestamp( last_block_timestamp );
-
-            const auto slot_record = client->get_chain()->get_slot_record( last_block_timestamp );
-            FC_ASSERT( slot_record.valid() );
-            const auto delegate_record = client->get_chain()->get_account_record( slot_record->block_producer_id );
-            FC_ASSERT( delegate_record.valid() && delegate_record->is_delegate() );
-            out << std::setw( 32 ) << pretty_shorten( delegate_record->name, 31 );
-
-            out << std::setw(  8 ) << "N/A";
-            out << std::setw(  8 ) << "N/A";
-            out << std::setw(  8 ) << "N/A";
-            out << std::setw( 15 ) << "N/A";
-            out << '\n';
-        }
-
         /* Print produced block */
-
         out << std::setw(  8 ) << block_record.block_num;
         out << std::setw( 20 ) << pretty_timestamp( block_record.timestamp );
 

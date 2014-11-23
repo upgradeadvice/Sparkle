@@ -172,19 +172,10 @@ namespace bts { namespace wallet {
           **/
          variant get_info()const;
 
-         /**
-          *  Block Generation API
-          */
-         ///@{
-         void set_delegate_block_production( const string& delegate_id, bool enabled = true );
 
          ///@param delegates_to_retrieve Type is delegate_status_flags. Uses int type to allow ORing multiple flags
          vector<wallet_account_record> get_my_delegates( int delegates_to_retrieve = any_delegate_status )const;
 
-         optional<time_point_sec> get_next_producible_block_timestamp( const vector<wallet_account_record>& delegate_records )const;
-
-         /** sign a block if this wallet controls the key for the active delegate, or throw */
-         void sign_block( signed_block_header& header )const;
          ///@}
 
          fc::ecc::compact_signature  sign_hash(const string& signer, const fc::sha256& hash )const;

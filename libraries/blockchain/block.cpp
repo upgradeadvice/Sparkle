@@ -10,27 +10,12 @@ namespace bts { namespace blockchain {
       return enc.result();
    }
 
-   block_id_type signed_block_header::id()const
+   block_id_type block_header::id()const
    {
       fc::sha512::encoder enc;
       fc::raw::pack( enc, *this );
       return fc::ripemd160::hash( enc.result() );
    }
-
-   bool signed_block_header::validate_signee( const fc::ecc::public_key& expected_signee )const
-   { 
-      return fc::ecc::public_key( delegate_signature, digest() ) == expected_signee;
-   }
-
-   public_key_type signed_block_header::signee()const
-   { 
-      return fc::ecc::public_key( delegate_signature, digest() );
-   }
-
-   void signed_block_header::sign( const fc::ecc::private_key& signer )
-   { try {
-      delegate_signature = signer.sign_compact( digest() );
-   } FC_RETHROW_EXCEPTIONS( warn, "" ) }
 
    size_t full_block::block_size()const
    {
@@ -48,7 +33,7 @@ namespace bts { namespace blockchain {
 
    full_block::operator digest_block()const
    {
-      digest_block db( (signed_block_header&)*this );
+      digest_block db( (block_header&)*this );
       db.user_transaction_ids.reserve( user_transactions.size() );
       for( auto item : user_transactions )
          db.user_transaction_ids.push_back( item.id() );

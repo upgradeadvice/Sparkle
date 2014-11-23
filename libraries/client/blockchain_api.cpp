@@ -44,27 +44,6 @@ vector<account_record> client_impl::blockchain_list_delegates( uint32_t first, u
    return delegate_records;
 }
 
-vector<string> client_impl::blockchain_list_missing_block_delegates( uint32_t block_num )
-{
-   if (block_num == 0 || block_num == 1)
-      return vector<string>();
-   vector<string> delegates;
-   auto this_block = _chain_db->get_block_record( block_num );
-   FC_ASSERT(this_block.valid(), "Cannot use this call on a block that has not yet been produced");
-   auto prev_block = _chain_db->get_block_record( block_num - 1 );
-   auto timestamp = prev_block->timestamp;
-   timestamp += BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC;
-   while (timestamp != this_block->timestamp)
-   {
-      auto slot_record = _chain_db->get_slot_record( timestamp );
-      FC_ASSERT( slot_record.valid() );
-      auto delegate_record = _chain_db->get_account_record( slot_record->block_producer_id );
-      FC_ASSERT( delegate_record.valid() );
-      delegates.push_back( delegate_record->name );
-      timestamp += BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC;
-   }
-   return delegates;
-}
 
 vector<block_record> client_impl::blockchain_list_blocks( uint32_t first, int32_t count )
 {
@@ -505,20 +484,12 @@ std::map<uint32_t, vector<fork_record>> client_impl::blockchain_list_forks()cons
    return _chain_db->get_forks_list();
 }
 
-vector<slot_record> client_impl::blockchain_get_delegate_slot_records( const string& delegate_name,
-                                                                       int64_t start_block_num, uint32_t count )const
-{
-   const auto delegate_record = _chain_db->get_account_record( delegate_name );
-   FC_ASSERT( delegate_record.valid() && delegate_record->is_delegate(), "${n} is not a delegate!", ("n",delegate_name) );
-   return _chain_db->get_delegate_slot_records( delegate_record->id, start_block_num, count );
-}
-
 string client_impl::blockchain_get_block_signee( const string& block )const
 {
    if( block.size() == 40 )
-      return _chain_db->get_block_signee( block_id_type( block ) ).name;
+      return string(_chain_db->get_block_signee( block_id_type( block ) ) );
    else
-      return _chain_db->get_block_signee( std::stoi( block ) ).name;
+      return string(_chain_db->get_block_signee( std::stoi( block ) ) );
 }
 
 bool client_impl::blockchain_verify_signature(const string& signer, const fc::sha256& hash, const fc::ecc::compact_signature& signature) const

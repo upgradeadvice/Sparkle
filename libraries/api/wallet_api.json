@@ -1847,7 +1847,7 @@
             {
                "name" : "collateral_symbol",
                "type" : "asset_symbol",
-               "description" : "the type of asset collateralizing this short (i.e. XTS)"
+               "description" : "the type of asset collateralizing this short (i.e. SPK)"
             },
             {
                "name" : "interest_rate",
@@ -1862,7 +1862,7 @@
             {
                "name" : "short_price_limit",
                "type" : "string",
-               "description" : "maximim price (USD per XTS) that the short will execute at, if 0 then no limit will be applied",
+               "description" : "maximim price (USD per SPK) that the short will execute at, if 0 then no limit will be applied",
                "default_value" : 0
             }
          ],
@@ -2101,15 +2101,10 @@
          "prerequisites" : ["wallet_open"]
       },
       {
-         "method_name" : "wallet_delegate_set_block_production",
-         "description" : "Enable or disable block production for a particular delegate account",
+         "method_name" : "wallet_enable_mining",
+         "description" : "Enable or disable block mining on this computer",
          "return_type" : "void",
          "parameters"  : [
-            {
-                "name" : "delegate_name",
-                "type" : "string",
-                "description" : "The delegate to enable/disable block production for; ALL for all delegate accounts"
-            },
             {
                 "name" : "enabled",
                 "type" : "bool",
@@ -2311,7 +2306,7 @@
              {
                 "name" : "price",
                 "type" : "real_amount",
-                "description" : "the number of this asset per XTS"
+                "description" : "the number of this asset per SPK"
              },
              {
                 "name" : "asset_symbol",

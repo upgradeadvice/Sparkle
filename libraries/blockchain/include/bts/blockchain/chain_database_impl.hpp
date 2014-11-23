@@ -78,11 +78,11 @@ namespace bts { namespace blockchain {
             void                                        pop_block();
             void                                        mark_invalid( const block_id_type& id, const fc::exception& reason );
             void                                        mark_included( const block_id_type& id, bool state );
-            void                                        verify_header( const full_block&, const public_key_type& block_signee );
+            void                                        verify_header( const full_block& );
             void                                        apply_transactions( const full_block& block,
                                                                             const pending_chain_state_ptr& );
-            void                                        pay_delegate( const pending_chain_state_ptr& pending_state,
-                                                                      const public_key_type& block_signee,
+            void                                        pay_miner( const pending_chain_state_ptr& pending_state,
+                                                                      const address& block_signee,
                                                                       const block_id_type& block_id );
             void                                        save_undo_state( const block_id_type& id,
                                                                          const pending_chain_state_ptr& );
@@ -161,7 +161,6 @@ namespace bts { namespace blockchain {
 
             bts::db::cached_level_map<vote_del, int>                                    _delegate_vote_index_db;
 
-            bts::db::level_map<time_point_sec, slot_record>                             _slot_record_db;
 
             bts::db::level_map<burn_record_key, burn_record_value>                      _burn_db;
 

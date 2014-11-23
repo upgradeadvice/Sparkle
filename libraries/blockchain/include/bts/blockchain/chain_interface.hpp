@@ -187,9 +187,6 @@ namespace bts { namespace blockchain {
 
          virtual uint32_t                   get_head_block_num()const                                       = 0;
 
-         virtual void                       store_slot_record( const slot_record& r )                       = 0;
-         virtual oslot_record               get_slot_record( const time_point_sec& start_time )const        = 0;
-
          virtual void                       store_market_history_record( const market_history_key& key,
                                                                          const market_history_record& record ) = 0;
          virtual omarket_history_record     get_market_history_record( const market_history_key& key )const = 0;

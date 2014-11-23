@@ -134,16 +134,6 @@ variant_object client_impl::get_info()const
          const auto enabled_delegates                          = _wallet->get_my_delegates( enabled_delegate_status );
          const auto block_production_enabled                   = !enabled_delegates.empty();
          info["wallet_block_production_enabled"]               = block_production_enabled;
-
-         if( block_production_enabled )
-         {
-            const auto next_block_timestamp                     = _wallet->get_next_producible_block_timestamp( enabled_delegates );
-            if( next_block_timestamp.valid() )
-            {
-               info["wallet_next_block_production_time"]         = ( *next_block_timestamp - now ).to_seconds();
-               info["wallet_next_block_production_timestamp"]    = *next_block_timestamp;
-            }
-         }
       }
    }
 

@@ -74,7 +74,6 @@ namespace bts { namespace blockchain {
       for( const auto& item : collateral )      prev_state->store_collateral_record( item.first, item.second );
       for( const auto& item : transactions )    prev_state->store_transaction( item.first, item.second );
       for( const auto& item : slates )          prev_state->store_delegate_slate( item.first, item.second );
-      for( const auto& item : slots )           prev_state->store_slot_record( item.second );
       for( const auto& item : market_history )  prev_state->store_market_history_record( item.first, item.second );
       for( const auto& item : market_statuses ) prev_state->store_market_status( item.second );
       for( const auto& item : feeds )           prev_state->set_feed( item.second );
@@ -202,16 +201,6 @@ namespace bts { namespace blockchain {
          auto prev_value = prev_state->get_collateral_record( item.first );
          if( prev_value.valid() ) undo_state->store_collateral_record( item.first, *prev_value );
          else  undo_state->store_collateral_record( item.first, collateral_record() );
-      }
-      for( const auto& item : slots )
-      {
-         auto prev_value = prev_state->get_slot_record( item.first );
-         if( prev_value ) undo_state->store_slot_record( *prev_value );
-         else
-         {
-             slot_record invalid_slot_record;
-             undo_state->store_slot_record( invalid_slot_record );
-         }
       }
       for( const auto& item : market_statuses )
       {
@@ -523,19 +512,6 @@ namespace bts { namespace blockchain {
       _dirty_markets.insert( key.order_price.asset_pair() );
    }
 
-   void pending_chain_state::store_slot_record( const slot_record& r )
-   {
-      slots[ r.start_time ] = r;
-   }
-
-   oslot_record pending_chain_state::get_slot_record( const time_point_sec& start_time )const
-   {
-      chain_interface_ptr prev_state = _prev_state.lock();
-      auto itr = slots.find( start_time );
-      if( itr != slots.end() ) return itr->second;
-      if( prev_state ) return prev_state->get_slot_record( start_time );
-      return oslot_record();
-   }
 
    void pending_chain_state::store_market_history_record(const market_history_key& key, const market_history_record& record)
    {

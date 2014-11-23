@@ -1507,51 +1507,6 @@ namespace detail {
        return key->public_key;
    }
 
-   void wallet::set_delegate_block_production( const string& delegate_name, bool enabled )
-   {
-      FC_ASSERT( is_open() );
-      std::vector<wallet_account_record> delegate_records;
-      const auto empty_before = get_my_delegates( enabled_delegate_status ).empty();
-
-      if( delegate_name != "ALL" )
-      {
-          if( !my->_blockchain->is_valid_account_name( delegate_name ) )
-              FC_THROW_EXCEPTION( invalid_name, "Invalid delegate name!", ("delegate_name",delegate_name) );
-
-          auto delegate_record = get_account( delegate_name );
-          FC_ASSERT( delegate_record.is_delegate(), "${name} is not a delegate.", ("name", delegate_name) );
-          auto key = my->_wallet_db.lookup_key( delegate_record.signing_address() );
-          FC_ASSERT( key.valid() && key->has_private_key(), "Unable to find private key for ${name}.", ("name", delegate_name) );
-          delegate_records.push_back( delegate_record );
-      }
-      else
-      {
-          delegate_records = get_my_delegates( any_delegate_status );
-      }
-
-      for( auto& delegate_record : delegate_records )
-      {
-          delegate_record.block_production_enabled = enabled;
-          my->_wallet_db.store_account( delegate_record );
-      }
-
-      const auto empty_after = get_my_delegates( enabled_delegate_status ).empty();
-
-      if( empty_before == empty_after )
-      {
-          return;
-      }
-      else if( empty_before )
-      {
-          ulog( "Wallet transaction scanning has been automatically disabled due to enabled delegates!" );
-          set_transaction_scanning( false );
-      }
-      else /* if( empty_after ) */
-      {
-          ulog( "Wallet transaction scanning has been automatically re-enabled!" );
-          set_transaction_scanning( true );
-      }
-   }
 
    vector<wallet_account_record> wallet::get_my_delegates(int delegates_to_retrieve)const
    {
@@ -1569,18 +1524,6 @@ namespace detail {
       }
       return delegate_records;
    }
-
-   optional<time_point_sec> wallet::get_next_producible_block_timestamp( const vector<wallet_account_record>& delegate_records )const
-   { try {
-      if( !is_open() || is_locked() ) return optional<time_point_sec>();
-
-      vector<account_id_type> delegate_ids;
-      delegate_ids.reserve( delegate_records.size() );
-      for( const auto& delegate_record : delegate_records )
-          delegate_ids.push_back( delegate_record.id );
-
-      return my->_blockchain->get_next_producible_block_timestamp( delegate_ids );
-   } FC_CAPTURE_AND_RETHROW() }
 
 
     fc::ecc::compact_signature wallet::sign_hash(const string& signer, const fc::sha256& hash )const
@@ -1603,54 +1546,6 @@ namespace detail {
            }
        }
     }
-
-   void wallet::sign_block( signed_block_header& header )const
-   { try {
-      if( NOT is_open()     ) FC_CAPTURE_AND_THROW( wallet_closed );
-      if( NOT is_unlocked() ) FC_CAPTURE_AND_THROW( wallet_locked );
-
-      const vector<account_id_type>& active_delegate_ids = my->_blockchain->get_active_delegates();
-      const account_record delegate_record = my->_blockchain->get_slot_signee( header.timestamp, active_delegate_ids );
-      FC_ASSERT( delegate_record.is_delegate() );
-
-      const public_key_type public_signing_key = delegate_record.signing_key();
-      const private_key_type private_signing_key = get_private_key( address( public_signing_key ) );
-
-      FC_ASSERT( delegate_record.delegate_info.valid() );
-      const uint32_t last_produced_block_num = delegate_record.delegate_info->last_block_num_produced;
-
-      const optional<secret_hash_type>& prev_secret_hash = delegate_record.delegate_info->next_secret_hash;
-      if( prev_secret_hash.valid() )
-      {
-          FC_ASSERT( !delegate_record.delegate_info->signing_key_history.empty() );
-          const map<uint32_t, public_key_type>& signing_key_history = delegate_record.delegate_info->signing_key_history;
-          const uint32_t last_signing_key_change_block_num = signing_key_history.crbegin()->first;
-
-          if( last_produced_block_num > last_signing_key_change_block_num )
-          {
-              header.previous_secret = my->get_secret( last_produced_block_num, private_signing_key );
-          }
-          else
-          {
-              // We need to use the old key to reveal the previous secret
-              FC_ASSERT( signing_key_history.size() >= 2 );
-              auto iter = signing_key_history.crbegin();
-              ++iter;
-
-              const public_key_type& prev_public_signing_key = iter->second;
-              const private_key_type prev_private_signing_key = get_private_key( address( prev_public_signing_key ) );
-
-              header.previous_secret = my->get_secret( last_produced_block_num, prev_private_signing_key );
-          }
-
-          FC_ASSERT( fc::ripemd160::hash( header.previous_secret ) == *prev_secret_hash );
-      }
-
-      header.next_secret_hash = fc::ripemd160::hash( my->get_secret( header.block_num, private_signing_key ) );
-      header.sign( private_signing_key );
-
-      FC_ASSERT( header.validate_signee( public_signing_key ) );
-   } FC_CAPTURE_AND_RETHROW( (header) ) }
 
    std::shared_ptr<transaction_builder> wallet::create_transaction_builder()
    { try {

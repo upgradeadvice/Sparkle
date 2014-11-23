@@ -19,16 +19,16 @@
  *
  *  Changing these parameters will result in a hard fork.
  */
-#define BTS_ADDRESS_PREFIX                                  "XTS"
-#define BTS_BLOCKCHAIN_SYMBOL                               "XTS"
-#define BTS_BLOCKCHAIN_NAME                                 "BitShares XTS"
-#define BTS_BLOCKCHAIN_DESCRIPTION                          "BitShares Test Network"
+#define BTS_ADDRESS_PREFIX                                  "SPK"
+#define BTS_BLOCKCHAIN_SYMBOL                               "SPK"
+#define BTS_BLOCKCHAIN_NAME                                 "Sparkle"
+#define BTS_BLOCKCHAIN_DESCRIPTION                          "Igniting a banking revolution"
 #define BTS_BLOCKCHAIN_PRECISION                            100000
 #define BTS_BLOCKCHAIN_MAX_TRANSACTION_EXPIRATION_SEC       (60*60*24*2)
 #define BTS_BLOCKCHAIN_MIN_YIELD_PERIOD_SEC                 (60*60*24) // 24 hours
 
-#define BTS_BLOCKCHAIN_MIN_BURN_FEE                         BTS_BLOCKCHAIN_PRECISION * 1 // 1 XTS
-#define BTS_BLOCKCHAIN_DEFAULT_RELAY_FEE                    10000 // XTS
+#define BTS_BLOCKCHAIN_MIN_BURN_FEE                         BTS_BLOCKCHAIN_PRECISION * 1 // 1 SPK
+#define BTS_BLOCKCHAIN_DEFAULT_RELAY_FEE                    10000 // SPK
 #define BTS_BLOCKCHAIN_MINIMUM_SHORT_ORDER_SIZE             (BTS_BLOCKCHAIN_PRECISION*100)
 #define BTS_BLOCKCHAIN_MAX_SHORT_PERIOD_SEC                 (2*60*60) // 2 hours for test network
 
@@ -42,7 +42,7 @@
 
 #define BTS_BLOCKCHAIN_ENABLE_NEGATIVE_VOTES                false
 
-#define BTS_MAX_DELEGATE_PAY_PER_BLOCK                      int64_t( 50 * BTS_BLOCKCHAIN_PRECISION ) // 50 XTS
+#define BTS_MAX_DELEGATE_PAY_PER_BLOCK                      int64_t( 50 * BTS_BLOCKCHAIN_PRECISION ) // 50 SPK
 
 /**
  * To prevent a delegate from producing blocks on split network,
@@ -54,7 +54,8 @@
 /**
  * Defines the number of seconds that should elapse between blocks
  */
-#define BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC                   int64_t(10)
+#define BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC                   int64_t(60)
+#define SPK_MIN_DIFFICULTY                                  int64_t(10)
 
 /**
  *  The maximum size of the raw data contained in the blockchain, this size is
