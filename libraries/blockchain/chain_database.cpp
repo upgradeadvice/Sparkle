@@ -639,17 +639,19 @@ namespace bts { namespace blockchain {
       { try {
           oasset_record base_asset_record = pending_state->get_asset_record( asset_id_type( 0 ) );
           FC_ASSERT( base_asset_record.valid() );
+          const int64_t total_paid_blocks = (100*365*24*60*3);
 
           const share_type max_new_shares = self->get_max_delegate_pay_issued_per_block();
-          const auto pay_rate_percent = 100;
-          const share_type accepted_new_shares = (max_new_shares * pay_rate_percent) / 100;
+          auto pay_rate_percent = ( total_paid_blocks - pending_state->get_head_block_num());
+          if( pay_rate_percent < 0 ) pay_rate_percent = 0;
+          const share_type accepted_new_shares = (max_new_shares * pay_rate_percent) / total_paid_blocks;
           FC_ASSERT( max_new_shares >= 0 && accepted_new_shares >= 0 );
           base_asset_record->current_share_supply += accepted_new_shares;
 
           static const uint32_t blocks_per_two_weeks = 14 * BTS_BLOCKCHAIN_BLOCKS_PER_DAY;
           const share_type max_collected_fees = base_asset_record->collected_fees / blocks_per_two_weeks;
-          const share_type accepted_collected_fees = (max_collected_fees * pay_rate_percent) / 100;
-          const share_type destroyed_collected_fees = max_collected_fees - accepted_collected_fees;
+          const share_type accepted_collected_fees = max_collected_fees / 2;
+          const share_type destroyed_collected_fees = 0;
           FC_ASSERT( max_collected_fees >= 0 && accepted_collected_fees >= 0 && destroyed_collected_fees >= 0 );
           base_asset_record->collected_fees -= max_collected_fees;
           base_asset_record->current_share_supply -= destroyed_collected_fees;
@@ -679,10 +681,11 @@ namespace bts { namespace blockchain {
 
           if( total_pay_percent > 0 )
           {
+             auto total_income = accepted_new_shares + accepted_collected_fees;
              for( auto delegate_rec : delegate_accounts )
              {
                 delegate_rec.delegate_info->pay_balance += 
-                   (accepted_new_shares * delegate_rec.delegate_pay_rate()) / total_pay_percent;
+                   (total_income* delegate_rec.delegate_pay_rate()) / total_pay_percent;
                 pending_state->store_account_record( delegate_rec );
              }
           }
@@ -745,26 +748,31 @@ namespace bts { namespace blockchain {
 
             FC_ASSERT( digest_data.validate_unique() );
 
-            uint64_t delta_time = BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC * 100;
-            uint64_t expected_time = BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC * 100;
-            if( block_data.block_num > 101 )
+            uint64_t delta_time = BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC * 1000;
+            uint32_t base_block = std::max( int32_t(1), int32_t(block_data.block_num - 1000) );
+            uint64_t expected_time = BTS_BLOCKCHAIN_BLOCK_INTERVAL_SEC * (block_data.block_num - base_block);
+
+            if( block_data.block_num > 10 )
             {
-               auto old_block = self->get_block_header( block_data.block_num - 100 );
+               auto old_block = self->get_block_header( base_block );
                auto last_block = self->get_block_header( block_data.block_num - 1 );
                delta_time = (last_block.timestamp - old_block.timestamp).to_seconds();
+
+               const auto difficulty = self->get_property( current_difficulty ).as_uint64();
+
+               int64_t new_difficulty = (difficulty * expected_time / delta_time);
+
+               if( (10000 * new_difficulty) / difficulty >= 100 ) 
+                  new_difficulty = (10100 * difficulty) / 10000; // max 1% increase per block (increase)
+
+               FC_ASSERT( block_data.difficulty() > difficulty );
+
+               if( new_difficulty < SPK_MIN_DIFFICULTY )
+                  new_difficulty = SPK_MIN_DIFFICULTY;
+
+               self->set_property( current_difficulty, new_difficulty );
             }
 
-            auto difficulty = self->get_property( current_difficulty ).as_uint64();
-            difficulty *= expected_time;
-            difficulty /= delta_time;
-
-
-            FC_ASSERT( block_data.difficulty() > difficulty );
-
-            if( difficulty < SPK_MIN_DIFFICULTY )
-               difficulty = SPK_MIN_DIFFICULTY;
-
-            self->set_property( current_difficulty, difficulty );
       } FC_CAPTURE_AND_RETHROW( (block_data) ) }
 
       void chain_database_impl::update_head_block( const full_block& block_data )
