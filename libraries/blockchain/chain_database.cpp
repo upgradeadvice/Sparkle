@@ -271,42 +271,6 @@ namespace bts { namespace blockchain {
             self->store_balance_record( initial_balance );
          }
 
-         static const time_point_sec sharedrop_timestamp( 1415188800 ); // 2014-11-06 00:00:00 UTC
-         static const uint32_t sharedrop_vesting_duration( fc::days( 2 * 365 ).to_seconds() ); // 2 years
-         for( const auto& item : config.bts_sharedrop )
-         {
-            withdraw_vesting data;
-            try {
-                string addr = item.raw_address;
-                if( addr.find( "KEY" ) == 0 )
-                    addr = BTS_ADDRESS_PREFIX + addr.substr( 3 );
-                data.owner = address( addr );
-            }
-            catch (...)
-            {
-                try
-                {
-                    data.owner = address( pts_address( item.raw_address ) );
-                }
-                FC_CAPTURE_AND_RETHROW( (item.raw_address) )
-            }
-
-            data.start_time = sharedrop_timestamp;
-            data.duration = sharedrop_vesting_duration;
-            data.original_balance = item.balance / 1000;
-
-            withdraw_condition condition( data, 0, 0 );
-            balance_record balance_rec( condition );
-            balance_rec.balance = data.original_balance;
-
-            /* In case of redundant balances */
-            auto cur = self->get_balance_record( balance_rec.id() );
-            if( cur.valid() ) balance_rec.balance += cur->balance;
-            balance_rec.last_update = sharedrop_timestamp;
-            const asset bal( balance_rec.balance, balance_rec.condition.asset_id );
-            balance_rec.snapshot_info = snapshot_record( item.raw_address, bal.amount );
-            self->store_balance_record( balance_rec );
-         }
 
          asset total;
          auto itr = _balance_db.begin();
