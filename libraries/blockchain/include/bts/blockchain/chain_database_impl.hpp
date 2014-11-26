@@ -78,7 +78,7 @@ namespace bts { namespace blockchain {
             void                                        pop_block();
             void                                        mark_invalid( const block_id_type& id, const fc::exception& reason );
             void                                        mark_included( const block_id_type& id, bool state );
-            void                                        verify_header( const full_block& );
+            void                                        verify_header( const full_block&, const pending_chain_state_ptr&  );
             void                                        apply_transactions( const full_block& block,
                                                                             const pending_chain_state_ptr& );
             void                                        pay_miner( const pending_chain_state_ptr& pending_state,

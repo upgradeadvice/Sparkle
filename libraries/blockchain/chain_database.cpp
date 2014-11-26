@@ -727,7 +727,7 @@ namespace bts { namespace blockchain {
       } FC_RETHROW_EXCEPTIONS( warn, "", ("block_id",block_id) ) }
 
 
-      void chain_database_impl::verify_header( const full_block& block_data )
+      void chain_database_impl::verify_header( const full_block& block_data, const pending_chain_state_ptr& pending_state )
       { try {
             // validate preliminaries:
             if( block_data.block_num > 1 && block_data.block_num != _head_block_header.block_num + 1 )
@@ -758,19 +758,21 @@ namespace bts { namespace blockchain {
                auto last_block = self->get_block_header( block_data.block_num - 1 );
                delta_time = (last_block.timestamp - old_block.timestamp).to_seconds();
 
-               const auto difficulty = self->get_property( current_difficulty ).as_uint64();
+               const auto difficulty = pending_state->get_property( current_difficulty ).as_uint64();
 
                int64_t new_difficulty = (difficulty * expected_time / delta_time);
 
                if( (10000 * new_difficulty) / difficulty >= 100 ) 
-                  new_difficulty = (10100 * difficulty) / 10000; // max 1% increase per block (increase)
+                  new_difficulty = (10100 * difficulty) / 10000; // max 1% increase per block 
+               else if( (10000 * difficulty) / new_difficulty >= 100 ) 
+                  new_difficulty = (9900 * difficulty) / 10000; // max 1% decrease per block 
 
                FC_ASSERT( block_data.difficulty() > difficulty );
 
                if( new_difficulty < SPK_MIN_DIFFICULTY )
                   new_difficulty = SPK_MIN_DIFFICULTY;
 
-               self->set_property( current_difficulty, new_difficulty );
+               pending_state->set_property( current_difficulty, new_difficulty );
             }
 
       } FC_CAPTURE_AND_RETHROW( (block_data) ) }
@@ -846,12 +848,14 @@ namespace bts { namespace blockchain {
             auto checkpoint_itr = CHECKPOINT_BLOCKS.find(block_data.block_num);
             if( checkpoint_itr != CHECKPOINT_BLOCKS.end() && checkpoint_itr->second != block_id )
               FC_CAPTURE_AND_THROW( failed_checkpoint_verification, (block_id)(checkpoint_itr->second) );
-            verify_header( block_data );
+
+
+            pending_chain_state_ptr pending_state = std::make_shared<pending_chain_state>( self->shared_from_this() );
+            verify_header( block_data, pending_state );
 
             summary.block_data = block_data;
 
             /* Create a pending state to track changes that would apply as we evaluate the block */
-            pending_chain_state_ptr pending_state = std::make_shared<pending_chain_state>( self->shared_from_this() );
             summary.applied_changes = pending_state;
 
             pay_miner( pending_state, block_data.miner, block_id );
