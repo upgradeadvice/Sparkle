@@ -13,11 +13,13 @@ namespace bts { namespace blockchain {
        block_header():block_num(0){}
 
        block_id_type        previous;
+       uint16_t             version = 0;
        uint32_t             block_num;
        fc::time_point_sec   timestamp;
        digest_type          transaction_digest;
        uint64_t             nonce = 0;
        address              miner;
+       vector<char>         reserved; // future expansion
    };
 
    typedef block_header signed_block_header;
@@ -46,6 +48,6 @@ namespace bts { namespace blockchain {
 } } // bts::blockchain
 
 FC_REFLECT( bts::blockchain::block_header,
-            (previous)(block_num)(timestamp)(transaction_digest)(nonce)(miner) )
+            (previous)(version)(block_num)(timestamp)(transaction_digest)(nonce)(miner)(reserved) )
 FC_REFLECT_DERIVED( bts::blockchain::digest_block, (bts::blockchain::block_header), (user_transaction_ids) )
 FC_REFLECT_DERIVED( bts::blockchain::full_block, (bts::blockchain::block_header), (user_transactions) )

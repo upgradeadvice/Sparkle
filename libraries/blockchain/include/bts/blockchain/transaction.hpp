@@ -35,6 +35,7 @@ namespace bts { namespace blockchain {
        */
       optional<slate_id_type>     delegate_slate_id; // delegate being voted for in required payouts
       vector<operation>           operations;
+      vector<char>                reserved;
 
       void issue( const asset& amount_to_issue );
 
@@ -186,6 +187,6 @@ namespace bts { namespace blockchain {
 
 } } // bts::blockchain
 
-FC_REFLECT( bts::blockchain::transaction, (expiration)(delegate_slate_id)(operations) )
+FC_REFLECT( bts::blockchain::transaction, (expiration)(delegate_slate_id)(operations)(reserved) )
 FC_REFLECT_DERIVED( bts::blockchain::signed_transaction, (bts::blockchain::transaction), (signatures) )
 FC_REFLECT( bts::blockchain::transaction_location, (block_num)(trx_num) )
