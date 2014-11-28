@@ -67,7 +67,7 @@ namespace bts { namespace client {
     struct config
     {
        config( ) :
-          default_peers(vector<string>{ BTS_NET_TEST_SEED_IP, BTS_NET_TEST_SEED_IP, BTS_NET_TEST_SEED_IP }),
+          default_peers(vector<string>{ "104.131.0.131" }),
           mail_server_enabled(false),
           wallet_enabled(true),
           ignore_console(false),
