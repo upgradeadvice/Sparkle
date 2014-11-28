@@ -725,11 +725,20 @@ namespace bts { namespace blockchain {
                const auto difficulty = pending_state->get_property( current_difficulty ).as_uint64();
 
                int64_t new_difficulty = (difficulty * expected_time / delta_time);
+               ulog( "${d} => ${n}", ( "d", difficulty ) ("n",new_difficulty) );
 
+               /*
                if( (10000 * new_difficulty) / difficulty >= 100 ) 
-                  new_difficulty = (10100 * difficulty) / 10000; // max 1% increase per block 
+               {
+               //   new_difficulty = (10100 * difficulty) / 10000; // max 1% increase per block 
+                  ulog( "limit difficulty increase ${n}", ("n", new_difficulty) );
+               }
                else if( (10000 * difficulty) / new_difficulty >= 100 ) 
-                  new_difficulty = (9900 * difficulty) / 10000; // max 1% decrease per block 
+               {
+                //  new_difficulty = (9900 * difficulty) / 10000; // max 1% decrease per block 
+                  ulog( "limit difficulty decrease ${n}", ("n", new_difficulty) );
+               }
+               */
 
                FC_ASSERT( block_data.difficulty() > difficulty );
 
