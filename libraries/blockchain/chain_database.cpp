@@ -724,8 +724,8 @@ namespace bts { namespace blockchain {
 
                const auto difficulty = pending_state->get_property( current_difficulty ).as_uint64();
 
-               int64_t new_difficulty = (difficulty * expected_time / delta_time);
-               ulog( "${d} => ${n}", ( "d", difficulty ) ("n",new_difficulty) );
+               int64_t new_difficulty = ((difficulty * expected_time) / delta_time);
+               //ulog( "${d} => ${n}", ( "d", difficulty ) ("n",new_difficulty) );
 
                /*
                if( (10000 * new_difficulty) / difficulty >= 100 ) 
@@ -741,6 +741,12 @@ namespace bts { namespace blockchain {
                */
 
                FC_ASSERT( block_data.difficulty() > difficulty );
+
+               // limit the rate at which difficulty adjusts to dampen movements
+               // in any particular direction.
+               // TODO: remove this hard fork in live network
+               if( block_data.block_num > 10000 )
+                  new_difficulty = (9*difficulty + new_difficulty)/10;
 
                if( new_difficulty < SPK_MIN_DIFFICULTY )
                   new_difficulty = SPK_MIN_DIFFICULTY;

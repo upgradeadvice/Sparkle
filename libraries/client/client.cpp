@@ -572,7 +572,8 @@ void client_impl::delegate_loop()
       _delegate_loop_first_run = false;
    }
 
-   fc::thread miner_thread("miner");
+   fc::thread miner_threads[4]; 
+   fc::future<full_block > nonce[4];
    while( _mining_enabled && !_delegate_loop_complete.canceled() )
    {
       // miners don't get to skip this check, they must check up on everyone else
@@ -587,27 +588,36 @@ void client_impl::delegate_loop()
          full_block next_block = _chain_db->generate_block( bts::blockchain::now() );
          next_block.miner = _miner_address;
          auto target = _chain_db->get_property( current_difficulty ).as_int64();
-         bool produced = miner_thread.async( [&]()->bool{
-             for( uint32_t i = 0; i < 20000; ++i )
-             {
-                next_block.nonce = i;
-                if( next_block.difficulty() >= target )
-                  return true;
-             }
-             return false;
-         } ).wait();
-
-         if( produced )
+         for( uint32_t t = 0; t < 4; ++t )
          {
-            on_new_block( next_block, next_block.id(), false );
+            nonce[t] = miner_threads[t].async( [=]()-> full_block {
+                auto tmp = next_block;
+                for( uint32_t i = 1; i < 20000; ++i )
+                {
+                   tmp.nonce = i;
+                   if( tmp.difficulty() >= target )
+                     return tmp;
+                }
+                return full_block();
+             } );
+         }
+         bool sent = false;
+         for( uint32_t t = 0; t < 4; ++t )
+         {
+            auto result = nonce[t].wait();
+            if( result.nonce && !sent )
+            {
+               sent = true;
+               on_new_block( result, result.id(), false );
 
 #ifndef DISABLE_DELEGATE_NETWORK
-            _delegate_network.broadcast_block( next_block );
-            // broadcast block to delegates first, starting with the next delegate
+               _delegate_network.broadcast_block( result );
+               // broadcast block to delegates first, starting with the next delegate
 #endif
 
-            _p2p_node->broadcast( block_message( next_block ) );
-            ilog( "Produced block #${n}!", ("n",next_block.block_num) );
+               _p2p_node->broadcast( block_message( result ) );
+               ilog( "Produced block #${n}!", ("n",result.block_num) );
+            }
          }
       }
       catch ( const fc::canceled_exception& )
